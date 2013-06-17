@@ -56,7 +56,7 @@ module NetSuite
       end
 
       def response_body
-        @response_body ||= response_hash[:base_ref]
+        @response_body ||= response_hash[:base_ref] || response_hash
       end
 
       def response_hash
@@ -68,8 +68,13 @@ module NetSuite
           response = NetSuite::Actions::Add.call(self)
           response.success?
         end
+        def add_and_return_response
+          NetSuite::Actions::Add.call(self)
+        end
       end
 
     end
   end
 end
+
+
