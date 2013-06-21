@@ -61,6 +61,8 @@ module NetSuite
     autoload :Customer,                   'netsuite/records/customer'
     autoload :CustomerAddressbook,        'netsuite/records/customer_addressbook'
     autoload :CustomerAddressbookList,    'netsuite/records/customer_addressbook_list'
+    autoload :CustomerCreditCard,         'netsuite/records/customer_credit_card'
+    autoload :CustomerCreditCardsList,    'netsuite/records/customer_credit_cards_list'
     autoload :CustomerPayment,            'netsuite/records/customer_payment'
     autoload :CustomerRefund,             'netsuite/records/customer_refund'
     autoload :CustomerRefundApply,        'netsuite/records/customer_refund_apply'

@@ -7,7 +7,7 @@ module NetSuite
       include Support::Actions
       include Namespaces::ListRel
 
-      actions :get, :add, :delete, :search
+      actions :get, :add, :delete, :search, :update
 
       fields :access_role, :account_number, :aging, :alt_email, :alt_name, :alt_phone, :bill_pay,
         :buying_reason, :buying_time_frame, :campaign_category, :category, :click_stream, :comments, :company_name,
@@ -27,6 +27,7 @@ module NetSuite
 
       field :addressbook_list,  CustomerAddressbookList
       field :custom_field_list, CustomFieldList
+      field :credit_cards_list, CustomerCreditCardsList
 
       read_only_fields :balance, :consol_balance, :deposit_balance, :consol_deposit_balance, :overdue_balance,
         :consol_overdue_balance, :unbilled_orders, :consol_unbilled_orders
