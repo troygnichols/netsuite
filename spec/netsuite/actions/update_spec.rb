@@ -1,23 +1,23 @@
 require 'spec_helper'
 
 describe NetSuite::Actions::Update do
+  before(:all) { savon.mock! }
+  after(:all) { savon.unmock! }
 
   context 'Customer' do
     let(:customer) { NetSuite::Records::Customer.new }
     let(:attributes) { { :entity_id => 'Shutter Fly', :company_name => 'Shutter Fly, Inc.' } }
 
     before do
-      savon.expects(:update).with({
+      savon.expects(:update).with(:message => {
         'platformMsgs:record' => {
-          'listRel:entityId'    => 'Shutter Fly',
-          'listRel:companyName' => 'Shutter Fly, Inc.'
+          :content! => {
+            'listRel:entityId'    => 'Shutter Fly',
+            'listRel:companyName' => 'Shutter Fly, Inc.',
+          },
+          '@xsi:type' => 'listRel:Customer'
         },
-        :attributes! => {
-          'platformMsgs:record' => {
-            'xsi:type' => 'listRel:Customer'
-          }
-        }
-      }).returns(:update_customer)
+      }).returns(File.read('spec/support/fixtures/update/update_customer.xml'))
     end
 
     it 'makes a valid request to the NetSuite API' do
@@ -36,16 +36,14 @@ describe NetSuite::Actions::Update do
     let(:attributes) { { :source => 'Google', :total => 100.0 } }
 
     before do
-      savon.expects(:update).with({
+      savon.expects(:update).with(:message => {
         'platformMsgs:record' => {
-          'tranSales:source' => 'Google',
+          :content! => {
+            'tranSales:source' => 'Google',
+          },
+          '@xsi:type' => 'tranSales:Invoice'
         },
-        :attributes! => {
-          'platformMsgs:record' => {
-            'xsi:type' => 'tranSales:Invoice'
-          }
-        }
-      }).returns(:update_invoice)
+      }).returns(File.read('spec/support/fixtures/update/update_invoice.xml'))
     end
 
     it 'makes a valid request to the NetSuite API' do

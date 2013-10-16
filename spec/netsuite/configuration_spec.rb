@@ -18,6 +18,11 @@ describe NetSuite::Configuration do
 
   describe '#connection' do
     it 'returns a Savon::Client object that allows requests to the service' do
+      # reset clears out the password info
+      config.email 'me@example.com'
+      config.password 'me@example.com'
+      config.account 1023
+
       config.connection.should be_kind_of(Savon::Client)
     end
   end
@@ -38,6 +43,14 @@ describe NetSuite::Configuration do
         config.wsdl.should match(/.*\/netsuite\/wsdl\/2011_2\.wsdl/)
       end
     end
+
+    context 'when the wsdl has not been set, but the API has been set' do
+      it 'should correctly return the full HTTP sandbox URL' do
+        config.api_version '2013_1'
+        config.sandbox false
+        config.wsdl.should eql('https://webservices.netsuite.com/wsdl/v2013_1_0/netsuite.wsdl')
+      end
+    end
   end
 
   describe '#auth_header' do
@@ -53,13 +66,7 @@ describe NetSuite::Configuration do
           'platformCore:email'    => 'user@example.com',
           'platformCore:password' => 'myPassword',
           'platformCore:account'  => '1234',
-          'platformCore:role'     => {},
-          :attributes! => {
-            'platformCore:role' => {
-              :internalId => '3',
-              :type       => 'role'
-            }
-          }
+          'platformCore:role'     => { :@type => 'role', :internalId => '3' },
         }
       })
     end
@@ -132,7 +139,7 @@ describe NetSuite::Configuration do
   describe '#role' do
     context 'when no role is defined' do
       it 'defaults to "3"' do
-        config.role.internal_id.should == "3"
+        config.role.should == "3"
       end
     end
   end
@@ -140,7 +147,7 @@ describe NetSuite::Configuration do
   describe '#role=' do
     it 'sets the role according to the input value' do
       config.role = "6"
-      config.role.internal_id.should == "6"
+      config.role.should == "6"
     end
   end
 

@@ -1,8 +1,9 @@
-# Netsuite
+# NetSuite Ruby SuiteTalk Gem
 
 * This gem will act as a wrapper around the NetSuite SuiteTalk WebServices API. Wow, that is a mouthful.
 * The gem does not cover the entire API, only the subset that we have found useful to cover so far.
-* [Extending the wrapper](#extending) is pretty simple. See below for an example.
+* Extending the wrapper is pretty simple. Check out the [contribution help doc](https://github.com/RevolutionPrep/netsuite/wiki/Contributing-to-the-Supported-NetSuite-API)
+* NetSuite development is overall a pretty poor experience. We have a list of [NetSuite Development Resources](https://github.com/RevolutionPrep/netsuite/wiki/NetSuite-Development-Resources) that might make things a bit less painful.
 
 ## Installation
 
@@ -19,6 +20,16 @@ Or install it yourself as:
     $ gem install netsuite
 
 This gem is built for ruby 1.9.x, checkout the [1-8-stable](https://github.com/RevolutionPrep/netsuite/tree/1-8-stable) branch for ruby 1.8.x support.
+
+## Testing
+Before contributing a patch make sure all existing tests pass.
+
+```
+git clone git://github.com/RevolutionPrep/netsuite.git
+cd netsuite
+bundle
+bundle exec rspec
+```
 ## Usage
 
 ### Configuration
@@ -26,109 +37,218 @@ This gem is built for ruby 1.9.x, checkout the [1-8-stable](https://github.com/R
 NetSuite.configure do
   reset!
   
+  # optional, defaults to 2011_2
   api_version	'2012_1'
   
-  # specify full wsdl URL for sandbox / production switching
+  # optionally specify full wsdl URL (to switch to sandbox, for example)
   wsdl          "https://webservices.sandbox.netsuite.com/wsdl/v#{api_version}_0/netsuite.wsdl"
   
+  # or specify the sandbox flag if you don't want to deal with specifying a full URL
+  sandbox	true
+  
+  # often the netsuite servers will hang which would cause a timeout exception to be raised
+  # if you don't mind waiting (e.g. processing NS via DJ), increasing the timeout should fix the issue
+  read_timeout  100000
+  
+  # you can specify a file or file descriptor to send the log output to (defaults to STDOUT)
+  log           File.join(Rails.root, 'log/netsuite.log')
+  
   # login information
-  email    		'email@domain.com'
-  password 		'password'
+  email    	'email@domain.com'
+  password 	'password'
   account   	'12345'
   role      	1111
 end
 ```
 
-### Customer
+### Examples
 
-* Initializing a customer can be done using a hash of attributes.
+```ruby
+# retrieve a customer
+customer = NetSuite::Records::Customer.get(:internal_id => 4)
+customer.is_person
 
-### Get
+# or
+NetSuite::Records::Customer.get(4).is_person
 
-* Retrieves the customer by internalId.
+# randomly assign a task
+customer_support_reps = [12345, 12346]
 
-    ```Ruby
-    customer = NetSuite::Records::Customer.get(:internal_id => 4) # => #<NetSuite::Records::Customer:0x1042f59b8>
-    customer.is_person                            # => true
-    ```
+task = NetSuite::Records::Task.new(
+	:title => 'Take Care of a Customer',
+	:assigned => NetSuite::Records::RecordRef.new(customer_support_reps.sample),
+	:due_date => DateTime.now + 1,
+	:message => "Take care of this"
+)
 
-## Additions
+task.add
 
-* Please submit a pull request for any models or actions that you would like to be included. The API is quite large and so we will necessarily not cover all of it.
-* Records should go into the `lib/netsuite/records/` directory.
-* Actions should be placed in their respective subdirectory under `lib/netsuite/actions`.
-* Example:
+# this will only work on OS X, open a browser to the record that was just created
+`open https://system.sandbox.netsuite.com/app/crm/calendar/task.nl?id=#{invoice.internal_id}`
 
-    ```Ruby
-    # lib/netsuite/actions/customer/add.rb
+task.update :message => 'New Message'
 
-    module NetSuite
-      module Actions
-        module Customer
-          class Add
+# basic search
+search = NetSuite::Records::Customer.search({
+  basic: [
+    {
+      field: 'companyName',
+      operator: 'contains',
+      value: company_name
+    }
+  ]
+})
 
-            def initialize(attributes = {})
-              @attributes = attributes
-            end
+`open https://system.netsuite.com/app/common/entity/custjob.nl?id=#{search.results.first.internal_id}`
 
-            def self.call(attributes)
-              new(attributes).call
-            end
+# advanced search building on saved search
+search = NetSuite::Records::Customer.search({
+  saved: 500,	# your saved search internalId
+  basic: [
+    {
+      field: 'entityId',
+      operator: 'hasKeywords',
+      value: 'Assumption',
+    },
+    {
+      field: 'stage',
+      operator: 'anyOf',
+      type: 'SearchMultiSelectCustomField',
+      value: [
+        '_lead', '_customer'
+      ]
+    },
+    {
+      field: 'customFieldList',
+      value: [
+        {
+          field: 'custentity_acustomfield',
+          operator: 'anyOf',
+          # type is needed for multiselect fields
+          type: 'SearchMultiSelectCustomField',
+          value: [
+            NetSuite::Records::CustomRecordRef.new(:internal_id => 1),
+            NetSuite::Records::CustomRecordRef.new(:internal_id => 2),
+          ]
+        }
+      ]
+    }
+  ]
+})
 
-            def call
-              response = NetSuite::Configuration.connection.request :add do
-                soap.header =  NetSuite::Configuration.auth_header
-                soap.body = {
-                  :entityId    => @attributes[:entity_id],
-                  :companyName => @attributes[:company_name],
-                  :unsubscribe => @attributes[:unsubscribe]
-                }
-              end
-              success = response.to_hash[:add_response][:write_response][:status][:@is_success] == 'true'
-              body    = response.to_hash[:add_response][:write_response][:base_ref]
-              NetSuite::Response.new(:success => success, :body => body)
-            end
+# advanced search from stratch
+search = NetSuite::Records::Transaction.search({
+  criteria: {
+    basic: [
+      {
+        field: 'type',
+        operator: 'anyOf',
+        type: 'SearchEnumMultiSelectField',
+        value: [ "_invoice", "_salesOrder" ]
+      },
+      {
+        field: 'tranDate',
+        operator: 'within',
+        # this is needed for date range search requests, for date requests with a single param type is not needed
+        type: 'SearchDateField',
+        value: [
+          # the following format is equivilent to ISO 8601
+          # Date.parse("1/1/2012").strftime("%Y-%m-%dT%H:%M:%S%z"),
+          # Date.parse("30/07/2013").strftime("%Y-%m-%dT%H:%M:%S%z")
 
-          end
-        end
-      end
-    end
+          # need to require the time library for this to work
+          Time.parse("01/01/2012").iso8601,
+          Time.parse("30/07/2013").iso8601,
 
-    response = NetSuite::Actions::Customer::Add.call(
-      :entity_id    => 'Shutter Fly',
-      :company_name => 'Shutter Fly, Inc.',
-      :unsubscribe  => false
-    )                 # => #<NetSuite::Response:0x1041f64b5>
-    response.success? # => true
-    response.body     # => { :internal_id => '979', :type => 'customer' }
-    ```
+          # or you can use a string. Note that the format below is different from the format of the above code
+          # but it matches exactly what NS returns 
+          # "2012-01-01T22:00:00.000-07:00",
+          # "2013-07-30T22:00:00.000-07:00"
+        ]
+      }
+    ],
 
-## Gotchas
 
-  * The Initialize Action duck-punches the .initialize method on any class that includes it.
-    This has not proven to be a issue yet, but should be taken into account when analyzing any
-    strange issues with the gem.
-  * Some records define a 'class' field. Defining a 'class' field on a record overrides the
-    #class and #class= methods for this class. This is very obviously a problem.  You can,
-    instead, define a 'klass' field that will be turned into 'class' before being submitted
-    to the API. The Invoice record has an example of this.
+    # equivilent to the 'Account' label in the GUI
+    accountJoin: [
+      {
+        field: 'internalId',
+        operator: 'noneOf',
+        value: [ NetSuite::Records::Account.new(:internal_id => 215) ]
+      }
+    ],
 
-## Contributing
+    itemJoin: [
+      {
+        field: 'customFieldList',
+        value: [
+          {
+            field: 'custitem_apcategoryforsales',
+            operator: 'anyOf',
+            type: 'SearchMultiSelectCustomField',
+            value: [
+              NetSuite::Records::Customer.new(:internal_id => 1),
+              NetSuite::Records::Customer.new(:internal_id => 2),
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  
+  # the column syntax is a WIP. This will change in the future
+  columns: {
+    'tranSales:basic' => [
+      'platformCommon:internalId/' => {},
+      'platformCommon:email/' => {},
+      'platformCommon:tranDate/' => {}
+    ],
+    'tranSales:accountJoin' => [
+      'platformCommon:internalId/' => {}
+    ],
+    'tranSales:contactPrimaryJoin' => [
+      'platformCommon:internalId/' => {}
+    ],
+    'tranSales:customerJoin' => [
+      'platformCommon:internalId/' => {}
+    ],
+    'tranSales:itemJoin' => [
+      'platformCommon:customFieldList' => [
+        'platformCore:customField/' => {
+          '@internalId' => 'custitem_apcategoryforsales',
+          '@xsi:type' => "platformCore:SearchColumnSelectCustomField"
+        }
+      ]
+    ]
+  },
 
-1. Fork it
-2. Create your feature branch (`git checkout -b my-new-feature`)
-3. Write new test and ensure that `bundle exec rspec` doesn't fail
-4. Commit your changes (`git commit -am 'Added some feature'`)
-5. Push to the branch (`git push origin my-new-feature`)
-6. Create new Pull Request
+  preferences: {
+    page_size: 10
+  }
+})
 
-## Fields and RecordRefs
+# basic search with pagination / SearchMorewithId
+search = NetSuite::Records::Customer.search(
+  criteria: {
+    basic: [
+      {
+        # no operator for booleans
+        field: 'isInactive',
+        value: false,
+      },
+    ]
+  },
 
-Note that some record attributes are specified as Fields while others are specified as RecordRefs. In some cases
-attributes are actually RecordRefs in the schema, but we indicate them as Fields. Our experience has shown
-this works as long as the attribute is only read from and is not written to. Writing a value for an attribute
-that has been wrongly specified will result in an error. Be careful when initializing objects from other objects --
-they may carry attributes that write to the new object.
+  preferences: {
+    page_size: 10,
+  }
+)
 
-As we build up this gem we will replace these inconsistent Fields with RecordRefs. Feel free to contribute new Record 
-definitions to help us along.
+search.results_in_batches do |batch|
+  puts batch.map(&:internal_id)
+end
+
+```
+
+
+

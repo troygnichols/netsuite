@@ -10,11 +10,13 @@ module NetSuite
           kname += k == :klass ? 'class' : k.to_s.lower_camelcase
 
           to_attributes!(hash, kname, v)
+
           if Array === v
             v = v.map { |i| i.respond_to?(:to_record) ? i.to_record : i }
-          else
-            v = v.to_record if v.respond_to?(:to_record)
+          elsif v.respond_to?(:to_record)
+            v = v.to_record
           end
+          
           hash[kname] = v
           hash
         end
@@ -26,16 +28,19 @@ module NetSuite
           hash[:attributes!][kname] ||= {}
           hash[:attributes!][kname]['internalId'] = v.internal_id
         end
+
         if v.respond_to?(:external_id) && v.external_id
           hash[:attributes!] ||= {}
           hash[:attributes!][kname] ||= {}
           hash[:attributes!][kname]['externalId'] = v.external_id
         end
+
         if v.kind_of?(NetSuite::Records::RecordRef) && v.type
           hash[:attributes!] ||= {}
           hash[:attributes!][kname] ||= {}
           hash[:attributes!][kname]['type'] = v.type.lower_camelcase
         end
+        
         if v.kind_of?(NetSuite::Records::CustomRecordRef) && v.type_id
           hash[:attributes!] ||= {}
           hash[:attributes!][kname] ||= {}

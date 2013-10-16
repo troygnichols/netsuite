@@ -3,7 +3,6 @@ require 'set'
 require 'savon'
 require 'netsuite/version'
 require 'netsuite/errors'
-require 'netsuite/xml_logger'
 require 'netsuite/core_ext/string/lower_camelcase'
 
 module NetSuite
@@ -11,8 +10,10 @@ module NetSuite
   autoload :Response,      'netsuite/response'
 
   module Namespaces
+    autoload :ActSched,       'netsuite/namespaces/act_sched'
     autoload :ListAcct,       'netsuite/namespaces/list_acct'
     autoload :ListRel,        'netsuite/namespaces/list_rel'
+    autoload :ListSupport,    'netsuite/namespaces/list_support'
     autoload :PlatformCommon, 'netsuite/namespaces/platform_common'
     autoload :PlatformCore,   'netsuite/namespaces/platform_core'
     autoload :TranCust,       'netsuite/namespaces/tran_cust'
@@ -28,22 +29,28 @@ module NetSuite
     autoload :RecordRefs, 'netsuite/support/record_refs'
     autoload :Records,    'netsuite/support/records'
     autoload :Requests,   'netsuite/support/requests'
+    autoload :SearchResult, 'netsuite/support/search_result'
   end
 
   module Actions
-    autoload :Add,        'netsuite/actions/add'
-    autoload :Delete,     'netsuite/actions/delete'
-    autoload :Get,        'netsuite/actions/get'
-    autoload :Initialize, 'netsuite/actions/initialize'
-    autoload :Update,     'netsuite/actions/update'
-    autoload :Search,     'netsuite/actions/search'    
+    autoload :Add,              'netsuite/actions/add'
+    autoload :Delete,           'netsuite/actions/delete'
+    autoload :Get,              'netsuite/actions/get'
+    autoload :GetList,          'netsuite/actions/get_list'
+    autoload :GetSelectValue,   'netsuite/actions/get_select_value'
+    autoload :Initialize,       'netsuite/actions/initialize'
+    autoload :Update,           'netsuite/actions/update'
+    autoload :Search,           'netsuite/actions/search'
+    autoload :SearchMoreWithId, 'netsuite/actions/search_more_with_id'
   end
 
   module Records
     autoload :AssemblyItem,               'netsuite/records/assembly_item'
     autoload :Account,                    'netsuite/records/account'
     autoload :AccountingPeriod,           'netsuite/records/accounting_period'
+    autoload :BaseRefList,                'netsuite/records/base_ref_list'
     autoload :BillAddress,                'netsuite/records/bill_address'
+    autoload :BinNumberList,              'netsuite/records/bin_number_list'    
     autoload :CashSale,                   'netsuite/records/cash_sale'
     autoload :CashSaleItem,               'netsuite/records/cash_sale_item'
     autoload :CashSaleItemList,           'netsuite/records/cash_sale_item_list'
@@ -64,37 +71,48 @@ module NetSuite
     autoload :CustomerCreditCard,         'netsuite/records/customer_credit_card'
     autoload :CustomerCreditCardsList,    'netsuite/records/customer_credit_cards_list'
     autoload :CustomerPayment,            'netsuite/records/customer_payment'
+    autoload :CustomerPaymentApply,       'netsuite/records/customer_payment_apply'
+    autoload :CustomerPaymentApplyList,   'netsuite/records/customer_payment_apply_list'
     autoload :CustomerRefund,             'netsuite/records/customer_refund'
     autoload :CustomerRefundApply,        'netsuite/records/customer_refund_apply'
     autoload :CustomerRefundApplyList,    'netsuite/records/customer_refund_apply_list'
     autoload :CustomerRefundDeposit,      'netsuite/records/customer_refund_deposit'
     autoload :CustomerRefundDepositList,  'netsuite/records/customer_refund_deposit_list'
+    autoload :ContactList,                'netsuite/records/contact_list'
+    autoload :Contact,                    'netsuite/records/contact'
     autoload :Department,                 'netsuite/records/department'
     autoload :Duration,                   'netsuite/records/duration'
     autoload :InventoryItem,              'netsuite/records/inventory_item'
     autoload :Invoice,                    'netsuite/records/invoice'
     autoload :InvoiceItem,                'netsuite/records/invoice_item'
     autoload :InvoiceItemList,            'netsuite/records/invoice_item_list'
+    autoload :ItemFulfillment,            'netsuite/records/item_fulfillment'
+    autoload :ItemFulfillmentItem,        'netsuite/records/item_fulfillment_item'
+    autoload :ItemFulfillmentItemList,    'netsuite/records/item_fulfillment_item_list'
     autoload :Job,                        'netsuite/records/job'
     autoload :JournalEntry,               'netsuite/records/journal_entry'
     autoload :JournalEntryLine,           'netsuite/records/journal_entry_line'
     autoload :JournalEntryLineList,       'netsuite/records/journal_entry_line_list'
+    autoload :KitItem,                    'netsuite/records/kit_item'
     autoload :Location,                   'netsuite/records/location'
     autoload :NonInventorySaleItem,       'netsuite/records/non_inventory_sale_item'
     autoload :PaymentMethod,              'netsuite/records/payment_method'
+    autoload :PhoneCall,                  'netsuite/records/phone_call'
     autoload :PricingMatrix,              'netsuite/records/pricing_matrix'
     autoload :RecordRef,                  'netsuite/records/record_ref'
     autoload :RevRecTemplate,             'netsuite/records/rev_rec_template'
     autoload :SalesOrder,                 'netsuite/records/sales_order'
+    autoload :SalesOrderItem,             'netsuite/records/sales_order_item'
+    autoload :SalesOrderItemList,         'netsuite/records/sales_order_item_list'
     autoload :ShipAddress,                'netsuite/records/ship_address'
+    autoload :SupportCase,                'netsuite/records/support_case'
+    autoload :Task,                       'netsuite/records/task'
     autoload :Term,                       'netsuite/records/term'
+    autoload :Transaction,                'netsuite/records/transaction'
   end
 
   def self.configure(&block)
     NetSuite::Configuration.instance_eval(&block)
-    Savon.configure do |config|
-      config.logger = NetSuite::XmlLogger.new(STDOUT)
-    end
   end
 
 end
