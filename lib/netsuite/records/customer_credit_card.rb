@@ -31,7 +31,7 @@ module NetSuite
       end
 
       def initialize_from_record(obj)
-	self.cc_number	      = obj.cc_number
+	       self.cc_number	      = obj.cc_number
         @internal_id          = obj.internal_id
       end
 

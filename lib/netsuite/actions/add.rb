@@ -46,7 +46,7 @@ module NetSuite
       end
 
       def response_body
-        @response_body ||= response_hash[:base_ref] #|| response_hash
+        @response_body ||= response_hash[:base_ref] || response_hash
       end
 
       def response_hash
