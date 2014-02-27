@@ -17,7 +17,8 @@ module NetSuite
         namespaces: namespaces,
         soap_header: auth_header,
         pretty_print_xml: true,
-        logger: logger
+        logger: logger,
+        filters: [:password, :cc_number, :cc_security_code, :account, 'ccNumber', 'ccSecurityCode']
         # open_timeout: ???
       }.merge(params))
     end
