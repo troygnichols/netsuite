@@ -38,7 +38,7 @@ module NetSuite
       # 	:payment_method, :credit_card, :credit_card_processor, :item_cost_discount, :item_cost_tax_code, :exp_cost_discount,
       # 	:time_discount, :exp_cost_tax_code, :time_tax_code, :job, :billing_schedule
 
-      record_refs :entity, :custom_form, :location, :payment_method
+      record_refs :entity, :custom_form, :location, :payment_method, :department, :sales_rep
 
       #field :custom_field_list, CustomFieldList
       field :item_list, CashSaleItemList
