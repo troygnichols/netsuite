@@ -11,7 +11,9 @@ module NetSuite
         when Hash
           items << CashSaleItem.new(attributes[:items])
         when Array
-          attributes[:items].each { |item| items << CashSaleItem.new(item) }
+          attributes[:items].each do |item|
+            items << CashSaleItem.new(item)
+          end
         end
       end
 
