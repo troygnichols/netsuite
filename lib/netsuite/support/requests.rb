@@ -8,14 +8,15 @@ module NetSuite
 
       module ClassMethods
 
-        def call(*args)
-          new(*args).call
+        def call(options, credentials={})
+          raise ArgumentError, "options should be an array" unless options.is_a?(Array)
+          new(*options).call(credentials)
         end
 
       end
 
-      def call
-        @response = request
+      def call(credentials={})
+        @response = request(credentials)
         build_response
       end
 
@@ -35,6 +36,10 @@ module NetSuite
 
       # Only care about headers in Search class for now
       def response_header
+        nil
+      end
+
+      def response_errors
         nil
       end
 

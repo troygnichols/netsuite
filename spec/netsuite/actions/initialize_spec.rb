@@ -22,13 +22,13 @@ describe NetSuite::Actions::Initialize do
   end
 
   it 'makes a valid request to the NetSuite API' do
-    NetSuite::Actions::Initialize.call(NetSuite::Records::Customer, customer)
+    NetSuite::Actions::Initialize.call([NetSuite::Records::Customer, customer])
   end
 
   it 'returns a valid Response object' do
-    response = NetSuite::Actions::Initialize.call(NetSuite::Records::Customer, customer)
-    response.should be_kind_of(NetSuite::Response)
-    response.should be_success
+    response = NetSuite::Actions::Initialize.call([NetSuite::Records::Customer, customer])
+    expect(response).to be_kind_of(NetSuite::Response)
+    expect(response).to be_success
   end
 
 end

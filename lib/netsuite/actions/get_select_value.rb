@@ -1,3 +1,4 @@
+# https://system.netsuite.com/help/helpcenter/en_US/Output/Help/SuiteCloudCustomizationScriptingWebServices/SuiteTalkWebServices/getSelectValue.html
 module NetSuite
   module Actions
     class GetSelectValue
@@ -10,12 +11,12 @@ module NetSuite
 
       private
 
-      def request
+      def request(credentials={})
         NetSuite::Configuration.connection(
-          namespaces: {
+          {namespaces: {
             'xmlns:platformMsgs' => "urn:messages_#{NetSuite::Configuration.api_version}.platform.webservices.netsuite.com",
             'xmlns:platformCore' => "urn:core_#{NetSuite::Configuration.api_version}.platform.webservices.netsuite.com"
-          },
+          }}, credentials
         ).call :get_select_value, :message => @options
       end
 
@@ -39,13 +40,13 @@ module NetSuite
 
         module ClassMethods
 
-          def get_select_value(options = {})
+          def get_select_value(options = {}, credentials={})
             message = {
               pageIndex: (options.delete(:pageIndex) || 1),
               fieldDescription: field_description(options)
             }
 
-            response = NetSuite::Actions::GetSelectValue.call(self, message)
+            response = NetSuite::Actions::GetSelectValue.call([self, message], credentials)
 
             if response.success?
               new(response.body)

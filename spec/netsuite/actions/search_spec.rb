@@ -4,28 +4,67 @@ describe NetSuite::Actions::Search do
   before(:all) { savon.mock! }
   after(:all) { savon.unmock! }
 
+  it "handles custom auth credentials" do
+    allow(NetSuite::Configuration).to receive(:connection).and_return(double().as_null_object)
+
+    credentials = {
+      email: 'fake@domain.com',
+      password: 'fake'
+    }
+    NetSuite::Records::Customer.search({}, credentials)
+
+    expect(NetSuite::Configuration).to have_received(:connection).with({:soap_header=>{
+      "platformMsgs:passport"=>{
+        "platformCore:email"=>"fake@domain.com",
+        "platformCore:password"=>"fake",
+        "platformCore:account"=>"1234",
+        "platformCore:role"=>{:@internalId=>"3"}
+      }, "platformMsgs:SearchPreferences"=>{}}}, credentials
+    )
+  end
+
+  context "search class name" do
+    it "infers class name if class doesn't specify search class" do
+      instance = described_class.new NetSuite::Records::Customer
+      expect(instance.class_name).to eq "Customer"
+    end
+
+    it "gets class name from search class specified" do
+      instance = described_class.new NetSuite::Records::InventoryItem
+      expect(instance.class_name).to eq NetSuite::Records::InventoryItem.search_class_name
+    end
+  end
+
   context "saved search" do
-    it "should handle a ID only search" do
-      savon.expects(:search).with(:message => {
-        'searchRecord' => {
-          '@xsi:type'           => 'listRel:CustomerSearchAdvanced',
-          '@savedSearchId'      => 500,
-          :content!             => { "listRel:criteria" => {} }
-        },
-      }).returns(File.read('spec/support/fixtures/search/saved_search_customer.xml'))
+    context "with no params" do
+      before do
+        savon.expects(:search).with(:message => {
+          'searchRecord' => {
+            '@xsi:type'           => 'listRel:CustomerSearchAdvanced',
+            '@savedSearchId'      => 500,
+            :content!             => { "listRel:criteria" => {} }
+          },
+        }).returns(File.read('spec/support/fixtures/search/saved_search_customer.xml'))
+      end
 
-      result = NetSuite::Records::Customer.search(saved: 500)
-      result.results.size.should == 1
-      result.results.first.email.should == 'aemail@gmail.com'
+      it "should handle a ID only search" do
+        result = NetSuite::Records::Customer.search(saved: 500)
+        expect(result.results.size).to eq(1)
+        expect(result.results.first.email).to eq('aemail@gmail.com')
+      end
+
+      it "merges preferences gracefully" do
+        expect {
+            NetSuite::Records::Customer.search(
+              saved: 500,
+              preferences: { page_size: 20 }
+            )
+        }.not_to raise_error
+      end
     end
 
-    it "should handle a ID search with basic params" do
-      
-    end
-
-    it "should handle a search with joined params" do
-      
-    end
+    skip "should handle a ID search with basic params"
+    skip "should handle a search with joined params"
 
     it "should handle a search with joined params containing custom field search" do
       savon.expects(:search).with(:message => {
@@ -36,23 +75,19 @@ describe NetSuite::Actions::Search do
             "listRel:criteria" => {
               "listRel:basic" => {
                 "platformCommon:entityId" => {
-                  "platformCore:searchValue" => "New Keywords"
+                  :content! => {"platformCore:searchValue" => "New Keywords"},
+                  :"@operator" => "hasKeywords"
                 },
-
-                :attributes! => {
-                  "platformCommon:entityId" => { "operator" => "hasKeywords" },
-                  "platformCommon:stage" => { "operator" => "anyOf" }
+                "platformCommon:stage" => {
+                  :content! => {"platformCore:searchValue"=>["_lead", "_customer"]},
+                  :"@operator" => "anyOf"
                 },
-
-                "platformCommon:stage" => { "platformCore:searchValue" => ["_lead", "_customer"] },
                 "platformCommon:customFieldList" => {
                   "platformCore:customField" => [
                     {
-                      "platformCore:searchValue" => [{}, {}],
+                      "platformCore:searchValue" => [{:"@internalId" => 4}, {:"@internalId" => 11}],
                       :attributes! => {
-                        "platformCore:searchValue" => {
-                          "internalId" => [4, 11]
-                        }
+                        "platformCore:searchValue" => { "internalId" => [4, 11] }
                       }
                     },
                     {
@@ -121,29 +156,19 @@ describe NetSuite::Actions::Search do
         ]
       })
 
-      search.results.size.should == 2
-      search.results.first.alt_name.should == 'A Awesome Name'
-      search.results.last.email.should == 'alessawesome@gmail.com'
+      expect(search.results.size).to eq(2)
+      expect(search.results.first.alt_name).to eq('A Awesome Name')
+      expect(search.results.last.email).to eq('alessawesome@gmail.com')
     end
   end
 
   context "advanced search" do
-    it "should handle search column definitions" do
-      
-    end
-    
-    it "should handle joined search results" do
-      
-    end
+    skip "should handle search column definitions"
+    skip "should handle joined search results"
   end
 
   context "basic search" do
-    it "should handle searching basic fields" do
-      
-    end
-
-    it "should handle searching with joined fields" do
-      
-    end
+    skip "should handle searching basic fields"
+    skip "should handle searching with joined fields"
   end
 end

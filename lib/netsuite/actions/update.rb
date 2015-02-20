@@ -1,29 +1,18 @@
+# https://system.netsuite.com/help/helpcenter/en_US/Output/Help/SuiteCloudCustomizationScriptingWebServices/SuiteTalkWebServices/update.html
 module NetSuite
   module Actions
     class Update
       include Support::Requests
+
+      attr_reader :response_hash
 
       def initialize(klass, attributes)
         @klass      = klass
         @attributes = attributes
       end
 
-      def request
-        api_version = NetSuite::Configuration.api_version
-        
-        NetSuite::Configuration.connection(
-          namespaces: {
-            'xmlns:platformMsgs'   => "urn:messages_#{api_version}.platform.webservices.netsuite.com",
-            'xmlns:platformCore'   => "urn:core_#{api_version}.platform.webservices.netsuite.com",
-            'xmlns:listRel'        => "urn:relationships_#{api_version}.lists.webservices.netsuite.com",
-            'xmlns:tranSales'      => "urn:sales_#{api_version}.transactions.webservices.netsuite.com",
-            'xmlns:platformCommon' => "urn:common_#{api_version}.platform.webservices.netsuite.com",
-            'xmlns:listAcct'       => "urn:accounting_#{api_version}.lists.webservices.netsuite.com",
-            'xmlns:actSched'       => "urn:scheduling_#{api_version}.activities.webservices.netsuite.com",
-            'xmlns:tranCust'       => "urn:customers_#{api_version}.transactions.webservices.netsuite.com",
-            'xmlns:setupCustom'    => "urn:customization_#{api_version}.setup.webservices.netsuite.com",
-          },
-        ).call :update, :message => request_body
+      def request(credentials={})
+        NetSuite::Configuration.connection({}, credentials).call :update, :message => request_body
       end
 
       # <platformMsgs:update>
@@ -46,7 +35,7 @@ module NetSuite
         if updated_record.respond_to?(:external_id) && updated_record.external_id
           hash['platformMsgs:record']['@platformMsgs:externalId'] = updated_record.external_id
         end
-        
+
         hash
       end
 
@@ -62,15 +51,30 @@ module NetSuite
         @response_body ||= response_hash[:base_ref]
       end
 
+      def response_errors
+        if response_hash[:status] && response_hash[:status][:status_detail]
+          @response_errors ||= errors
+        end
+      end
+
       def response_hash
         @response_hash ||= @response.to_hash[:update_response][:write_response]
       end
 
+      def errors
+        error_obj = response_hash[:status][:status_detail]
+        error_obj = [error_obj] if error_obj.class == Hash
+        error_obj.map do |error|
+          NetSuite::Error.new(error)
+        end
+      end
+
       module Support
-        def update(options = {})
+        def update(options = {}, credentials={})
           options.merge!(:internal_id => internal_id) if respond_to?(:internal_id) && internal_id
           options.merge!(:external_id => external_id) if respond_to?(:external_id) && external_id
-          response = NetSuite::Actions::Update.call(self.class, options)
+          response = NetSuite::Actions::Update.call([self.class, options], credentials)
+          @errors = response.errors
           response.success?
         end
       end

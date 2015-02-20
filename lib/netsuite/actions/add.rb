@@ -1,3 +1,4 @@
+# https://system.netsuite.com/help/helpcenter/en_US/Output/Help/SuiteCloudCustomizationScriptingWebServices/SuiteTalkWebServices/add.html
 module NetSuite
   module Actions
     class Add
@@ -11,8 +12,8 @@ module NetSuite
 
       private
 
-      def request
-        NetSuite::Configuration.connection.call :add, :message => request_body
+      def request(credentials={})
+        NetSuite::Configuration.connection({}, credentials).call(:add, :message => request_body)
       end
 
       # <soap:Body>
@@ -70,8 +71,10 @@ module NetSuite
       end
 
       module Support
-        def add
-          response = NetSuite::Actions::Add.call(self)
+        def add(credentials={})
+          response = NetSuite::Actions::Add.call([self], credentials)
+
+          @errors = response.errors
 
           @errors = response.errors
 

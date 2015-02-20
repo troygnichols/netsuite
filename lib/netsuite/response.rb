@@ -7,6 +7,7 @@ module NetSuite
       @header   = attributes[:header]
       @body     = attributes[:body]
       @errors   = attributes[:errors]
+      @errors   = attributes[:errors] || []
     end
 
     def success!
@@ -16,6 +17,5 @@ module NetSuite
     def success?
       @success
     end
-
   end
 end

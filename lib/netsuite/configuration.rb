@@ -10,17 +10,23 @@ module NetSuite
       @attributes ||= {}
     end
 
-    def connection(params = {})
+    def connection(params={}, credentials={})
       Savon.client({
         wsdl: wsdl,
         read_timeout: read_timeout,
         namespaces: namespaces,
-        soap_header: auth_header,
+        soap_header: auth_header(credentials).update(soap_header),
         pretty_print_xml: true,
         logger: logger,
+<<<<<<< HEAD
         filters: [:password, :cc_number, :cc_security_code, :account, 'ccNumber', 'ccSecurityCode']
         # open_timeout: ???
       }.merge(params))
+=======
+        log_level: log_level,
+        log: !silent,   # turn off logging entirely if configured
+      }.update(params))
+>>>>>>> 56fe7fae92908a2e3d6812ecc56516f773cacd45
     end
 
     def api_version(version = nil)
@@ -66,13 +72,25 @@ module NetSuite
       end
     end
 
-    def auth_header
-      attributes[:auth_header] ||= {
+    def soap_header=(headers)
+      attributes[:soap_header] = headers
+    end
+
+    def soap_header(headers = nil)
+      if headers
+        self.soap_header = headers
+      else
+        attributes[:soap_header] ||= {}
+      end
+    end
+
+    def auth_header(credentials={})
+      {
         'platformMsgs:passport' => {
-          'platformCore:email'    => email,
-          'platformCore:password' => password,
-          'platformCore:account'  => account.to_s,
-          'platformCore:role'     => { :'@type' => 'role', :@internalId => role }
+          'platformCore:email'    => credentials[:email] || email,
+          'platformCore:password' => credentials[:password] || password,
+          'platformCore:account'  => credentials[:account] || account.to_s,
+          'platformCore:role'     => { :@internalId => credentials[:role] || role }
         }
       }
     end
@@ -87,9 +105,15 @@ module NetSuite
         'xmlns:actSched'       => "urn:scheduling_#{api_version}.activities.webservices.netsuite.com",
         'xmlns:setupCustom'    => "urn:customization_#{api_version}.setup.webservices.netsuite.com",
         'xmlns:listAcct'       => "urn:accounting_#{api_version}.lists.webservices.netsuite.com",
+        'xmlns:tranBank'       => "urn:bank_#{api_version}.transactions.webservices.netsuite.com",
         'xmlns:tranCust'       => "urn:customers_#{api_version}.transactions.webservices.netsuite.com",
+        'xmlns:tranInvt'       => "urn:inventory_#{api_version}.transactions.webservices.netsuite.com",
         'xmlns:listSupport'    => "urn:support_#{api_version}.lists.webservices.netsuite.com",
         'xmlns:tranGeneral'    => "urn:general_#{api_version}.transactions.webservices.netsuite.com",
+        'xmlns:listMkt'        => "urn:marketing_#{api_version}.lists.webservices.netsuite.com",
+        'xmlns:listWebsite'    => "urn:website_#{api_version}.lists.webservices.netsuite.com",
+        'xmlns:fileCabinet'    => "urn:filecabinet_#{api_version}.documents.webservices.netsuite.com",
+        'xmlns:listEmp'        => "urn:employees_#{api_version}.lists.webservices.netsuite.com"
       }
     end
 
@@ -168,9 +192,30 @@ module NetSuite
       attributes[:log]
     end
 
-    def logger
-      attributes[:logger] ||= ::Logger.new (log && !log.empty?) ? log : $stdout
+    def logger(value = nil)
+      attributes[:logger] = if value.nil?
+        ::Logger.new((log && !log.empty?) ? log : $stdout)
+      else
+        value
+      end
     end
 
+    def silent(value=nil)
+      self.silent = value if value
+      attributes[:silent]
+    end
+
+    def silent=(value)
+      attributes[:silent] ||= value
+    end
+
+    def log_level(value = nil)
+      self.log_level = value || :debug
+      attributes[:log_level]
+    end
+
+    def log_level=(value)
+      attributes[:log_level] ||= value
+    end
   end
 end

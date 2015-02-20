@@ -1,3 +1,4 @@
+# https://system.netsuite.com/help/helpcenter/en_US/Output/Help/SuiteCloudCustomizationScriptingWebServices/SuiteTalkWebServices/get.html
 module NetSuite
   module Actions
     class Get
@@ -10,12 +11,12 @@ module NetSuite
 
       private
 
-      def request
+      def request(credentials={})
         NetSuite::Configuration.connection(
-          namespaces: {
+          {namespaces: {
             'xmlns:platformMsgs' => "urn:messages_#{NetSuite::Configuration.api_version}.platform.webservices.netsuite.com",
             'xmlns:platformCore' => "urn:core_#{NetSuite::Configuration.api_version}.platform.webservices.netsuite.com"
-          },
+          }}, credentials
         ).call :get, message: request_body
       end
 
@@ -63,10 +64,10 @@ module NetSuite
 
         module ClassMethods
 
-          def get(options = {})
+          def get(options = {}, credentials = {})
             options = { :internal_id => options } unless options.is_a?(Hash)
 
-            response = NetSuite::Actions::Get.call(self, options)
+            response = NetSuite::Actions::Get.call([self, options], credentials)
             if response.success?
              new(response.body)
             else

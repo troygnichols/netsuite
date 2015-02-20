@@ -7,30 +7,30 @@ describe NetSuite::Records::SalesOrder do
 
   it 'has all the right fields' do
     [
-      :alt_handling_cost, :alt_shipping_cost, :amount_paid, :amount_remaining, :applied, :auto_apply, 
-      :balance, :bill_address, :contrib_pct, :created_date, :currency_name, :deferred_revenue, 
-      :discount_rate, :discount_total, :email, :end_date, :est_gross_profit, :est_gross_profit_percent, 
-      :exchange_rate, :exclude_commission, :fax, :gift_cert_applied, :gift_cert_available, 
-      :gift_cert_total, :handling_cost, :handling_tax1_rate, :handling_tax2_rate, :is_taxable, 
-      :last_modified_date, :memo, :message, :on_credit_hold, :other_ref_num, :recognized_revenue, 
-      :rev_rec_on_rev_commitment, :sales_effective_date, :shipping_cost, :shipping_tax1_rate, 
-      :shipping_tax2_rate, :source, :start_date, :status, :sub_total, :sync_partner_teams, 
-      :sync_sales_teams, :tax2_total, :tax_rate, :tax_total, :to_be_emailed, :to_be_faxed, :to_be_printed, 
-      :total, :total_cost_estimate, :tran_date, :tran_id, :tran_is_vsoe_bundle, :unapplied, :vat_reg_num, 
-      :vsoe_auto_calc
+      :alt_handling_cost, :alt_shipping_cost, :amount_paid, :amount_remaining, :applied, :auto_apply,
+      :balance, :bill_address, :contrib_pct, :created_date, :currency_name, :deferred_revenue,
+      :discount_rate, :discount_total, :email, :end_date, :est_gross_profit, :est_gross_profit_percent,
+      :exchange_rate, :exclude_commission, :fax, :gift_cert_applied, :gift_cert_available,
+      :gift_cert_total, :handling_cost, :handling_tax1_rate, :handling_tax2_rate, :is_taxable,
+      :last_modified_date, :memo, :message, :on_credit_hold, :other_ref_num, :recognized_revenue,
+      :rev_rec_on_rev_commitment, :sales_effective_date, :shipping_cost, :shipping_tax1_rate,
+      :shipping_tax2_rate, :source, :start_date, :status, :sub_total, :sync_partner_teams,
+      :sync_sales_teams, :tax2_total, :tax_rate, :tax_total, :to_be_emailed, :to_be_faxed, :to_be_printed,
+      :total, :total_cost_estimate, :tran_date, :tran_id, :tran_is_vsoe_bundle, :unapplied, :vat_reg_num,
+      :vsoe_auto_calc, :cc_approved
     ].each do |field|
-      salesorder.should have_field(field)
+      expect(salesorder).to have_field(field)
     end
   end
 
   it 'has all the right record refs' do
     [
-      :account, :bill_address_list, :created_from, :currency, :custom_form, :department, :discount_item, 
-      :entity, :gift_cert, :handling_tax_code, :job, :klass, :lead_source, :location, :message_sel, 
-      :opportunity, :partner, :posting_period, :promo_code, :sales_group, :sales_rep, 
+      :account, :bill_address_list, :created_from, :currency, :custom_form, :department, :discount_item,
+      :entity, :gift_cert, :handling_tax_code, :job, :klass, :lead_source, :location, :message_sel,
+      :opportunity, :partner, :posting_period, :promo_code, :sales_group, :sales_rep,
       :ship_method, :shipping_tax_code, :subsidiary, :tax_item
     ].each do |record_ref|
-      salesorder.should have_record_ref(record_ref)
+      expect(salesorder).to have_record_ref(record_ref)
     end
   end
 
@@ -47,20 +47,25 @@ describe NetSuite::Records::SalesOrder do
         }
       }
       salesorder.item_list = attributes
-      salesorder.item_list.should be_kind_of(NetSuite::Records::SalesOrderItemList)
-      salesorder.item_list.items.length.should eql(1)
+      expect(salesorder.item_list).to be_kind_of(NetSuite::Records::SalesOrderItemList)
+      expect(salesorder.item_list.items.length).to eql(1)
     end
 
     it 'can be set from a SalesOrderItemList object' do
       item_list = NetSuite::Records::SalesOrderItemList.new
       salesorder.item_list = item_list
-      salesorder.item_list.should eql(item_list)
+      expect(salesorder.item_list).to eql(item_list)
     end
   end
 
   describe '#transaction_bill_address' do
     it 'can be set from attributes'
     it 'can be set from a BillAddress object'
+  end
+
+  describe '#transaction_ship_address' do
+    it 'can be set from attributes'
+    it 'can be set from a ShipAddress object'
   end
 
   describe '#revenue_status' do
@@ -88,10 +93,10 @@ describe NetSuite::Records::SalesOrder do
       let(:response) { NetSuite::Response.new(:success => true, :body => { :alt_shipping_cost => 100 }) }
 
       it 'returns a SalesOrder instance populated with the data from the response object' do
-        NetSuite::Actions::Get.should_receive(:call).with(NetSuite::Records::SalesOrder, :external_id => 1).and_return(response)
+        expect(NetSuite::Actions::Get).to receive(:call).with([NetSuite::Records::SalesOrder, :external_id => 1], {}).and_return(response)
         salesorder = NetSuite::Records::SalesOrder.get(:external_id => 1)
-        salesorder.should be_kind_of(NetSuite::Records::SalesOrder)
-        salesorder.alt_shipping_cost.should eql(100)
+        expect(salesorder).to be_kind_of(NetSuite::Records::SalesOrder)
+        expect(salesorder.alt_shipping_cost).to eql(100)
       end
     end
 
@@ -99,10 +104,10 @@ describe NetSuite::Records::SalesOrder do
       let(:response) { NetSuite::Response.new(:success => false, :body => {}) }
 
       it 'raises a RecordNotFound exception' do
-        NetSuite::Actions::Get.should_receive(:call).with(NetSuite::Records::SalesOrder, :external_id => 1).and_return(response)
-        lambda {
+        expect(NetSuite::Actions::Get).to receive(:call).with([NetSuite::Records::SalesOrder, :external_id => 1], {}).and_return(response)
+        expect {
           NetSuite::Records::SalesOrder.get(:external_id => 1)
-        }.should raise_error(NetSuite::RecordNotFound,
+        }.to raise_error(NetSuite::RecordNotFound,
           /NetSuite::Records::SalesOrder with OPTIONS=(.*) could not be found/)
       end
     end
@@ -111,14 +116,14 @@ describe NetSuite::Records::SalesOrder do
   describe '.initialize' do
     context 'when the request is successful' do
       it 'returns an initialized sales order from the customer entity' do
-        NetSuite::Actions::Initialize.should_receive(:call).with(NetSuite::Records::SalesOrder, customer).and_return(response)
+        expect(NetSuite::Actions::Initialize).to receive(:call).with([NetSuite::Records::SalesOrder, customer], {}).and_return(response)
         salesorder = NetSuite::Records::SalesOrder.initialize(customer)
-        salesorder.should be_kind_of(NetSuite::Records::SalesOrder)
+        expect(salesorder).to be_kind_of(NetSuite::Records::SalesOrder)
       end
     end
 
     context 'when the response is unsuccessful' do
-      pending
+      skip
     end
   end
 
@@ -130,10 +135,10 @@ describe NetSuite::Records::SalesOrder do
 
       it 'returns true' do
         salesorder = NetSuite::Records::SalesOrder.new(test_data)
-        NetSuite::Actions::Add.should_receive(:call).
-            with(salesorder).
+        expect(NetSuite::Actions::Add).to receive(:call).
+            with([salesorder], {}).
             and_return(response)
-        salesorder.add.should be_true
+        expect(salesorder.add).to be_truthy
       end
     end
 
@@ -142,10 +147,10 @@ describe NetSuite::Records::SalesOrder do
 
       it 'returns false' do
         salesorder = NetSuite::Records::SalesOrder.new(test_data)
-        NetSuite::Actions::Add.should_receive(:call).
-            with(salesorder).
+        expect(NetSuite::Actions::Add).to receive(:call).
+            with([salesorder], {}).
             and_return(response)
-        salesorder.add.should be_false
+        expect(salesorder.add).to be_falsey
       end
     end
   end
@@ -158,10 +163,10 @@ describe NetSuite::Records::SalesOrder do
 
       it 'returns true' do
         salesorder = NetSuite::Records::SalesOrder.new(test_data)
-        NetSuite::Actions::Delete.should_receive(:call).
-            with(salesorder).
+        expect(NetSuite::Actions::Delete).to receive(:call).
+            with([salesorder], {}).
             and_return(response)
-        salesorder.delete.should be_true
+        expect(salesorder.delete).to be_truthy
       end
     end
 
@@ -170,10 +175,10 @@ describe NetSuite::Records::SalesOrder do
 
       it 'returns false' do
         salesorder = NetSuite::Records::SalesOrder.new(test_data)
-        NetSuite::Actions::Delete.should_receive(:call).
-            with(salesorder).
+        expect(NetSuite::Actions::Delete).to receive(:call).
+            with([salesorder], {}).
             and_return(response)
-        salesorder.delete.should be_false
+        expect(salesorder.delete).to be_falsey
       end
     end
   end
@@ -188,14 +193,25 @@ describe NetSuite::Records::SalesOrder do
         'tranSales:email'  => 'something@example.com',
         'tranSales:tranId' => '4'
       }
-      salesorder.to_record.should eql(record)
+      expect(salesorder.to_record).to eql(record)
     end
   end
 
   describe '#record_type' do
     it 'returns a string representation of the SOAP type' do
-      salesorder.record_type.should eql('tranSales:SalesOrder')
+      expect(salesorder.record_type).to eql('tranSales:SalesOrder')
     end
   end
 
+  skip "closing a sales order" do
+    it "closes each line to close the sales order" do
+      attributes = sales_order.attributes
+      attributes[:item_list].items.each do |item|
+        item.is_closed = true
+        item.attributes = item.attributes.slice(:line, :is_closed)
+      end
+
+      sales_order.update({ item_list: attributes[:item_list] })
+    end
+  end
 end

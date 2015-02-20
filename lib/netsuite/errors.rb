@@ -12,5 +12,4 @@ module NetSuite
       @message = args[:message]
     end
   end
-
 end
