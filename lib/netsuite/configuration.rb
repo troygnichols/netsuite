@@ -18,15 +18,10 @@ module NetSuite
         soap_header: auth_header(credentials).update(soap_header),
         pretty_print_xml: true,
         logger: logger,
-<<<<<<< HEAD
-        filters: [:password, :cc_number, :cc_security_code, :account, 'ccNumber', 'ccSecurityCode']
-        # open_timeout: ???
-      }.merge(params))
-=======
+        filters: [:password, :cc_number, :cc_security_code, :account, 'ccNumber', 'ccSecurityCode'],
         log_level: log_level,
         log: !silent,   # turn off logging entirely if configured
       }.update(params))
->>>>>>> 56fe7fae92908a2e3d6812ecc56516f773cacd45
     end
 
     def api_version(version = nil)
